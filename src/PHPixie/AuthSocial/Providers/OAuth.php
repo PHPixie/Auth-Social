@@ -22,6 +22,11 @@ class OAuth extends \PHPixie\Auth\Providers\Provider\Implementation
     {
         $provider = $this->socialProviders->get($providerName);
         $socialUser = $provider->handleCallback($callbackUrl, $data);
+
+        if($socialUser === null) {
+            return null;
+        }
+
         $user = $this->repository()->getBySocialUser($socialUser);
 
         if($user !== null) {
