@@ -4,37 +4,40 @@ namespace PHPixie\AuthSocial\Providers;
 
 class OAuth extends \PHPixie\Auth\Providers\Provider\Implementation
 {
-    protected $socialProvider;
-    
+    protected $socialProviders;
+
     public function __construct($socialProviders, $domain, $name, $configData)
     {
         parent::__construct($domain, $name, $configData);
-        $this->social = $social;
+        $this->socialProviders = $socialProviders;
     }
-    
+
     public function loginUrl($providerName, $callbackUrl)
     {
         $provider = $this->socialProviders->get($providerName);
-        return $provider->provider->loginUrl($callbackUrl);
+        return $provider->loginUrl($callbackUrl);
     }
-    
-    public function handleResponse($providerName, $data, $callbackUrl)
+
+    public function handleCallback($providerName, $callbackUrl, $data)
     {
         $provider = $this->socialProviders->get($providerName);
-        $socialUser = $provider->handleCallback($data, $callbackUrl);
+        $socialUser = $provider->handleCallback($callbackUrl, $data);
         $user = $this->repository()->getBySocialUser($socialUser);
-        
-        if($user === null) {
-            return null;
+
+        if($user !== null) {
+            $this->setUser($user);
         }
-        
+
+        return $socialUser;
+    }
+
+    public function setUser($user)
+    {
         $this->domain->setUser($user, $this->name);
-        
+
         $persistProviders = $this->configData->get('persistProviders', array());
         foreach($persistProviders as $providerName) {
             $this->domain->provider($providerName)->persist();
         }
-        
-        return $socialUser;
     }
 }
